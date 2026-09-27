@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Finance Tracker</title>
+<script src="https://telegram.org/js/telegram-web-app.js"></script>
+<link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <div id="app">
+    <header>
+      <h1>My Finances</h1>
+    </header>
+
+    <section class="summary-grid" id="summaryGrid">
+      <div class="summary-card" data-period="week">
+        <span class="label">Week</span>
+        <span class="net" id="week-net">—</span>
+        <span class="breakdown"><span id="week-income">0</span> in / <span id="week-expense">0</span> out</span>
+      </div>
+      <div class="summary-card" data-period="month">
+        <span class="label">Month</span>
+        <span class="net" id="month-net">—</span>
+        <span class="breakdown"><span id="month-income">0</span> in / <span id="month-expense">0</span> out</span>
+      </div>
+      <div class="summary-card" data-period="year">
+        <span class="label">Year</span>
+        <span class="net" id="year-net">—</span>
+        <span class="breakdown"><span id="year-income">0</span> in / <span id="year-expense">0</span> out</span>
+      </div>
+    </section>
+
+    <section class="add-form">
+      <div class="type-toggle">
+        <button type="button" class="type-btn active" data-type="INCOME">Income</button>
+        <button type="button" class="type-btn" data-type="EXPENSE">Expense</button>
+      </div>
+      <form id="txForm">
+        <input type="number" id="amount" placeholder="Amount" step="0.01" min="0.01" required />
+        <input type="text" id="reason" placeholder="Reason (e.g. salary, groceries)" maxlength="200" required />
+        <button type="submit" id="submitBtn">Add Income</button>
+      </form>
+      <p class="error" id="formError"></p>
+    </section>
+
+    <section class="tx-list">
+      <h2>Recent</h2>
+      <ul id="txList"></ul>
+    </section>
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>

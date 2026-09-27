@@ -1,0 +1,22 @@
+// Simple SQLite schema — one table. Kept minimal on purpose.
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model Transaction {
+  id           Int      @id @default(autoincrement())
+  telegramId   String   // Telegram user id, keeps each user's data separate
+  type         String
+  amount       Float
+  reason       String   // short note: "salary", "groceries", "Kasma Shop sale", etc.
+  createdAt    DateTime @default(now())
+
+  @@index([telegramId])
+  @@index([telegramId, createdAt])
+}

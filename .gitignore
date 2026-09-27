@@ -4,3 +4,4 @@ node_modules/
 !.env.example
 prisma/dev.db
 prisma/dev.db-*
+.neon

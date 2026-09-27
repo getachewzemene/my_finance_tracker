@@ -5,12 +5,13 @@ const cors = require("cors");
 const prisma = require("./db");
 const { validateInitData, AuthError } = require("./auth");
 const { computeSummary, computeAllSummaries } = require("./summaryService");
-const { bot, launchBot } = require("./bot");
+const { bot, configureBot } = require("./bot");
 
 const app = express();
 app.use(cors());
 app.use(express.json());
 app.use(express.static(path.join(__dirname, "..", "public")));
+const startBot = configureBot(app);
 
 // --- auth ----------------------------------------------------------------
 //
@@ -121,8 +122,14 @@ app.get("/health", (_req, res) => res.json({ ok: true }));
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
   console.log(`Server listening on port ${PORT}`);
-  launchBot();
+  Promise.resolve(startBot()).catch((err) => {
+    console.error("Telegram bot failed to start:", err);
+  });
 });
 
-process.once("SIGINT", () => bot.stop("SIGINT"));
-process.once("SIGTERM", () => bot.stop("SIGTERM"));
+process.once("SIGINT", () => {
+  if (!process.env.TELEGRAM_WEBHOOK_URL) bot.stop("SIGINT");
+});
+process.once("SIGTERM", () => {
+  if (!process.env.TELEGRAM_WEBHOOK_URL) bot.stop("SIGTERM");
+});

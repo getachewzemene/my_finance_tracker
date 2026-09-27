@@ -1,11 +1,11 @@
-// Simple SQLite schema — one table. Kept minimal on purpose.
+// Simple PostgreSQL schema — one table. Kept minimal on purpose.
 
 generator client {
   provider = "prisma-client-js"
 }
 
 datasource db {
-  provider = "sqlite"
+  provider = "postgresql"
   url      = env("DATABASE_URL")
 }
 

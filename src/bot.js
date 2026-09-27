@@ -49,13 +49,39 @@ bot.command("summary", async (ctx) => {
   }
 });
 
-function launchBot() {
+function configureBot(app) {
   if (!BOT_TOKEN) {
-    console.warn("BOT_TOKEN not set — skipping Telegram bot startup.");
-    return;
+    return () => console.warn("BOT_TOKEN not set — skipping Telegram bot startup.");
   }
-  bot.launch();
-  console.log("Telegram bot started (long polling).");
+
+  const webhookUrl = process.env.TELEGRAM_WEBHOOK_URL;
+  if (!webhookUrl) {
+    return () => {
+      bot.launch().catch((err) => console.error("Telegram bot failed to start:", err));
+      console.log("Telegram bot started (long polling).");
+    };
+  }
+
+  const webhookSecret = process.env.TELEGRAM_WEBHOOK_SECRET;
+  if (!webhookSecret) {
+    throw new Error("TELEGRAM_WEBHOOK_SECRET is required when TELEGRAM_WEBHOOK_URL is set");
+  }
+
+  const parsedWebhookUrl = new URL(webhookUrl);
+  if (parsedWebhookUrl.protocol !== "https:" || parsedWebhookUrl.pathname === "/") {
+    throw new Error("TELEGRAM_WEBHOOK_URL must be HTTPS and include a non-root path");
+  }
+
+  const webhookPath = parsedWebhookUrl.pathname;
+  app.post(
+    webhookPath,
+    bot.webhookCallback(webhookPath, { secretToken: webhookSecret })
+  );
+
+  return async () => {
+    await bot.telegram.setWebhook(webhookUrl, { secret_token: webhookSecret });
+    console.log("Telegram bot started (webhook).");
+  };
 }
 
-module.exports = { bot, launchBot };
+module.exports = { bot, configureBot };

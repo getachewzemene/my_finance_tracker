@@ -8,7 +8,7 @@ totals (income, expense, net).
 
 - **Bot**: Telegraf (Telegram Bot API, long polling)
 - **Backend**: Express (serves the Mini App + a small JSON API)
-- **DB**: SQLite via Prisma (zero setup, one file)
+- **DB**: PostgreSQL via Prisma (for example, Neon)
 - **Frontend**: Plain HTML/CSS/JS using the Telegram WebApp SDK — no build step
 
 ## Project layout
@@ -81,16 +81,22 @@ curl http://localhost:3000/api/summary/all \
    ```
    Fill in:
    - `BOT_TOKEN` — from BotFather
-   - `WEBAPP_URL` — the public HTTPS URL this server will run on (Telegram
-     Mini Apps require HTTPS; for local dev use a tunnel like `ngrok http 3000`
-     and paste its `https://...` URL here)
+    - `WEBAPP_URL` — the public HTTPS URL of this app (Telegram Mini Apps
+       require HTTPS)
+    - `DATABASE_URL` — the PostgreSQL connection string from Neon
+    - For Render, set `TELEGRAM_WEBHOOK_URL` to
+       `https://<your-service>.onrender.com/telegram/webhook` and set
+       `TELEGRAM_WEBHOOK_SECRET` to a random secret. Without these, the bot uses
+       long polling, which is useful for local development.
 
 4. **Set up the database**
    ```bash
    npx prisma generate
-   npx prisma migrate dev --name init
+   npx prisma migrate deploy
    ```
-   This creates `prisma/dev.db` (SQLite) with the `Transaction` table.
+   This applies the checked-in PostgreSQL migration to the database in
+   `DATABASE_URL`. Use `npx prisma migrate dev` when creating new migrations
+   during development.
 
 5. **Run**
    ```bash
@@ -129,6 +135,8 @@ verified init data (see **Auth**, above).
   calendar month/year — not rolling 7/30/365-day windows.
 - Auth relies on Telegram's initData signature, not a separate password/login —
   appropriate for a Mini App, since Telegram itself is the identity provider.
-- Deploying: any Node host with HTTPS works (Render, Railway, Fly.io, a VPS
-  behind a reverse proxy). Swap `DATABASE_URL` to Postgres/MySQL in
-  `schema.prisma` if you outgrow SQLite — the rest of the code doesn't change.
+- Deploying: the Prisma schema and checked-in migration target PostgreSQL.
+   Render's free web service sleeps after inactivity, so configure the Telegram
+   webhook variables above instead of relying on long polling. Neon Free scales
+   its database to zero after inactivity and has storage/compute quotas. Existing
+   data in a previous local SQLite `dev.db` file is not copied automatically.

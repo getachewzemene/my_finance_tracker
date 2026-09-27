@@ -1,5 +1,6 @@
 const { Telegraf, Markup } = require("telegraf");
 const { computeAllSummaries } = require("./summaryService");
+const { CURRENCY_CODE } = require("./currency");
 
 const BOT_TOKEN = process.env.BOT_TOKEN;
 const WEBAPP_URL = process.env.WEBAPP_URL;
@@ -31,17 +32,16 @@ bot.command("summary", async (ctx) => {
   const telegramId = String(ctx.from.id);
   try {
     const data = await computeAllSummaries(telegramId);
-    const fmt = (n) => n.toFixed(2);
     ctx.reply(
-      `📅 This week: income ${fmt(data.week.income)} · expense ${fmt(
+      `📅 This week: income ${CURRENCY_CODE} ${data.week.income} · expense ${CURRENCY_CODE} ${
         data.week.expense
-      )} · net ${fmt(data.week.net)}\n` +
-        `🗓️ This month: income ${fmt(data.month.income)} · expense ${fmt(
+      } · net ${CURRENCY_CODE} ${data.week.net}\n` +
+        `🗓️ This month: income ${CURRENCY_CODE} ${data.month.income} · expense ${CURRENCY_CODE} ${
           data.month.expense
-        )} · net ${fmt(data.month.net)}\n` +
-        `📆 This year: income ${fmt(data.year.income)} · expense ${fmt(
+        } · net ${CURRENCY_CODE} ${data.month.net}\n` +
+        `📆 This year: income ${CURRENCY_CODE} ${data.year.income} · expense ${CURRENCY_CODE} ${
           data.year.expense
-        )} · net ${fmt(data.year.net)}`
+        } · net ${CURRENCY_CODE} ${data.year.net}`
     );
   } catch (err) {
     console.error(err);

@@ -52,6 +52,21 @@ body {
   white-space: nowrap;
 }
 
+.header-meta {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.currency-badge {
+  padding: 5px 7px;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  color: var(--text);
+  font-size: 10px;
+  font-weight: 700;
+}
+
 .summary-grid {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
@@ -171,6 +186,26 @@ body {
   font-size: 14px;
   background: var(--bg);
   color: var(--text);
+}
+
+#txForm select,
+.category-period-select {
+  width: 100%;
+  min-height: 42px;
+  padding: 9px 11px;
+  border: 1px solid var(--line);
+  border-radius: 7px;
+  background: var(--bg);
+  color: var(--text);
+  font: inherit;
+  font-size: 13px;
+}
+
+.field-label {
+  margin-bottom: -5px;
+  color: var(--hint);
+  font-size: 11px;
+  font-weight: 600;
 }
 
 #txForm input:focus {
@@ -326,6 +361,67 @@ button:disabled { cursor: wait; opacity: 0.65; }
   font-size: 12px;
 }
 
+.export-form {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: end;
+  gap: 8px;
+  padding: 10px 0;
+  border-bottom: 1px solid var(--line);
+}
+
+.export-dates {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 7px;
+  min-width: 0;
+}
+
+.export-dates label {
+  display: block;
+  margin: 0 0 4px 1px;
+  color: var(--hint);
+  font-size: 10px;
+  font-weight: 600;
+}
+
+.export-dates input {
+  width: 100%;
+  min-width: 0;
+  min-height: 36px;
+  padding: 6px;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  background: var(--bg);
+  color: var(--text);
+  font: inherit;
+  font-size: 11px;
+}
+
+.export-form > button {
+  min-height: 36px;
+  padding: 7px 10px;
+  border: 0;
+  border-radius: 6px;
+  background: var(--text);
+  color: var(--bg);
+  font-size: 11px;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.export-status {
+  grid-column: 1 / -1;
+  min-height: 0;
+  margin: 0;
+  color: var(--hint);
+  font-size: 11px;
+}
+
+.export-status:not(:empty) {
+  min-height: 14px;
+}
+
 #txList {
   list-style: none;
   margin: 0;
@@ -399,10 +495,234 @@ button:disabled { cursor: wait; opacity: 0.65; }
   font-size: 13px;
 }
 
+.category-report {
+  margin: 22px 0 8px;
+  padding-top: 16px;
+  border-top: 1px solid var(--line);
+}
+
+.category-report-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 8px;
+}
+
+.category-report-heading .eyebrow {
+  margin-bottom: 3px;
+}
+
+.category-report-heading h2 {
+  margin: 0;
+  font-size: 16px;
+}
+
+.category-period-select {
+  width: auto;
+  min-width: 122px;
+  min-height: 34px;
+  padding: 6px 8px;
+  font-size: 11px;
+}
+
+.category-row {
+  padding: 10px 0;
+  border-bottom: 1px solid var(--line);
+}
+
+.category-row-heading {
+  display: grid;
+  grid-template-columns: minmax(52px, 1fr) auto auto;
+  align-items: center;
+  gap: 8px;
+  min-height: 22px;
+}
+
+.category-name {
+  min-width: 0;
+  overflow-wrap: anywhere;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.category-kind {
+  font-size: 9px;
+  font-weight: 700;
+}
+
+.category-kind.income,
+.category-amount.income { color: var(--income); }
+.category-kind.expense,
+.category-amount.expense { color: var(--expense); }
+
+.category-amount {
+  font-size: 12px;
+  white-space: nowrap;
+}
+
+.category-track {
+  height: 5px;
+  overflow: hidden;
+  margin-top: 6px;
+  border-radius: 5px;
+  background: var(--secondary-bg);
+}
+
+.category-fill {
+  display: block;
+  height: 100%;
+  min-width: 3px;
+  border-radius: inherit;
+}
+
+.category-fill.income { background: var(--income); }
+.category-fill.expense { background: var(--expense); }
+
+.report-empty {
+  padding: 14px 0;
+  color: var(--hint);
+  font-size: 12px;
+}
+
+.budget-section {
+  margin: 22px 0 8px;
+  padding-top: 16px;
+  border-top: 1px solid var(--line);
+}
+
+.budget-heading {
+  margin-bottom: 10px;
+}
+
+.budget-heading .eyebrow {
+  margin-bottom: 3px;
+}
+
+.budget-heading h2 {
+  margin: 0;
+  font-size: 16px;
+}
+
+.budget-form {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: 8px;
+}
+
+.budget-form input,
+.budget-form select {
+  width: 100%;
+  min-width: 0;
+  min-height: 40px;
+  padding: 8px 10px;
+  border: 1px solid var(--line);
+  border-radius: 7px;
+  background: var(--bg);
+  color: var(--text);
+  font: inherit;
+  font-size: 12px;
+}
+
+.budget-form button {
+  grid-column: 1 / -1;
+  min-height: 40px;
+  border: 0;
+  border-radius: 7px;
+  background: var(--button);
+  color: var(--button-text);
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.budget-form button:disabled {
+  opacity: 0.65;
+}
+
+.budget-caption {
+  margin: 7px 0 0;
+  color: var(--hint);
+  font-size: 10px;
+}
+
+.budget-row {
+  padding: 11px 0;
+  border-bottom: 1px solid var(--line);
+}
+
+.budget-row-heading,
+.budget-values {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.budget-name {
+  min-width: 0;
+  font-size: 13px;
+}
+
+.budget-percent {
+  margin-left: auto;
+  color: var(--income);
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.budget-percent.warning { color: #b57900; }
+.budget-percent.over,
+.budget-values .over { color: var(--expense); }
+
+.budget-remove {
+  width: 30px;
+  height: 30px;
+  border: 0;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--hint);
+  font-size: 18px;
+}
+
+.budget-remove:hover {
+  color: var(--expense);
+  background: var(--secondary-bg);
+}
+
+.budget-values {
+  margin-top: 3px;
+  color: var(--hint);
+  font-size: 10px;
+}
+
+.budget-track {
+  height: 6px;
+  overflow: hidden;
+  margin-top: 7px;
+  border-radius: 6px;
+  background: var(--secondary-bg);
+}
+
+.budget-fill {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: var(--income);
+}
+
+.budget-fill.warning { background: #d39000; }
+.budget-fill.over { background: var(--expense); }
+
 @media (max-width: 360px) {
   #app { padding-right: 12px; padding-left: 12px; }
   .summary-grid { gap: 5px; }
   .summary-card { padding-right: 4px; padding-left: 4px; }
   .summary-card .breakdown { font-size: 9px; }
   .segmented button { font-size: 10px; }
+  .category-row-heading { gap: 5px; }
+  .category-amount { font-size: 11px; }
+  .budget-form { grid-template-columns: 1fr; }
+  .budget-form button { grid-column: auto; }
+  .export-form { grid-template-columns: 1fr; }
+  .export-form > button { width: 100%; }
 }

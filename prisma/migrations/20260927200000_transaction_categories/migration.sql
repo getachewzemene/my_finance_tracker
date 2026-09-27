@@ -1,0 +1,2 @@
+ALTER TABLE "Transaction"
+ADD COLUMN "category" VARCHAR(32) NOT NULL DEFAULT 'Other';

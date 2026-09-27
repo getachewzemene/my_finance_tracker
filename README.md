@@ -1,7 +1,7 @@
 # Financial Tracker — Telegram Bot + Mini App
 
-A simple income/expense tracker. Every entry has a type (income or expense),
-an amount, and a reason. The Mini App shows weekly, monthly, and yearly
+A simple ETB income/expense tracker. Every entry has a type (income or expense),
+an exact amount, and a reason. The Mini App shows weekly, monthly, and yearly
 totals (income, expense, net).
 
 ## Stack
@@ -117,11 +117,16 @@ curl http://localhost:3000/api/summary/all \
 
 | Method | Path | Body / Query | Description |
 |---|---|---|---|
-| POST | `/api/transactions` | `{ userId, type: "INCOME"\|"EXPENSE", amount, reason }` | Add an entry |
+| POST | `/api/transactions` | `{ type, amount, category, reason }` | Add an entry |
 | GET | `/api/transactions?limit=&period=&type=` | — | Recent entries; period: all, today, week, month, or year; type: INCOME or EXPENSE |
+| GET | `/api/transactions/export.csv?from=&to=` | — | Download the authenticated user's transactions for an inclusive date range |
 | DELETE | `/api/transactions/:id?userId=` | — | Delete one entry |
 | GET | `/api/summary?userId=&period=week\|month\|year` | — | Totals for one period |
 | GET | `/api/summary/all?userId=` | — | Week + month + year totals in one call |
+| GET | `/api/summary/categories?period=` | — | Category totals for today, week, month, or year, split by income and expense |
+| GET | `/api/budgets` | — | Current-month spending against saved category budgets |
+| POST | `/api/budgets` | `{ category, monthlyLimit }` | Create or update a recurring monthly expense budget |
+| DELETE | `/api/budgets/:category` | — | Remove a category budget |
 
 Every row above requires the `X-Telegram-Init-Data` header — there is no
 `userId` parameter anymore. The user id is derived server-side from the
@@ -129,8 +134,15 @@ verified init data (see **Auth**, above).
 
 ## Notes on scope (kept deliberately simple)
 
-- One table, one type field (income/expense) — no categories, no
-  multi-currency, no recurring entries. Easy to extend later if needed.
+- Categories are fixed: income uses Salary, Business, Investment, Gift, or
+   Other; expenses use Food, Transport, Bills, Housing, Shopping, Health,
+   Entertainment, or Other. Custom categories and recurring entries are not
+   supported.
+- ETB amounts are stored to two decimal places. The precision migration rounds
+   existing entries to cents and tags them as ETB. Changing currency later
+   requires a deliberate data conversion.
+- Expense-category budgets recur monthly and send one Telegram alert at 80%
+   and one when the limit is reached or exceeded.
 - "Week" = Monday–Sunday of the current calendar week; "month"/"year" are
   calendar month/year — not rolling 7/30/365-day windows.
 - Auth relies on Telegram's initData signature, not a separate password/login —

@@ -1,4 +1,6 @@
 const prisma = require("./db");
+const { Prisma } = require("@prisma/client");
+const { CURRENCY_CODE } = require("./currency");
 const { getRange } = require("./utils/dateRanges");
 
 async function computeSummary(telegramId, period) {
@@ -9,12 +11,19 @@ async function computeSummary(telegramId, period) {
 
   const income = rows
     .filter((r) => r.type === "INCOME")
-    .reduce((sum, r) => sum + r.amount, 0);
+    .reduce((sum, r) => sum.plus(r.amount), new Prisma.Decimal(0));
   const expense = rows
     .filter((r) => r.type === "EXPENSE")
-    .reduce((sum, r) => sum + r.amount, 0);
+    .reduce((sum, r) => sum.plus(r.amount), new Prisma.Decimal(0));
 
-  return { period, income, expense, net: income - expense, count: rows.length };
+  return {
+    period,
+    currencyCode: CURRENCY_CODE,
+    income: income.toFixed(2),
+    expense: expense.toFixed(2),
+    net: income.minus(expense).toFixed(2),
+    count: rows.length,
+  };
 }
 
 async function computeAllSummaries(telegramId) {
@@ -26,4 +35,20 @@ async function computeAllSummaries(telegramId) {
   return { week, month, year };
 }
 
-module.exports = { computeSummary, computeAllSummaries };
+async function computeCategorySummary(telegramId, period) {
+  const { start, end } = getRange(period);
+  const rows = await prisma.transaction.groupBy({
+    by: ["category", "type"],
+    where: { telegramId, createdAt: { gte: start, lt: end } },
+    _sum: { amount: true },
+    orderBy: [{ category: "asc" }, { type: "asc" }],
+  });
+
+  return rows.map(({ category, type, _sum }) => ({
+    category,
+    type,
+    amount: _sum.amount?.toFixed(2) || "0.00",
+  }));
+}
+
+module.exports = { computeSummary, computeAllSummaries, computeCategorySummary };

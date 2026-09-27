@@ -13,10 +13,25 @@ model Transaction {
   id           Int      @id @default(autoincrement())
   telegramId   String   // Telegram user id, keeps each user's data separate
   type         String
-  amount       Float
+  amount       Decimal  @db.Decimal(14, 2)
+  currencyCode String   @default("ETB") @db.Char(3)
+  category     String   @default("Other") @db.VarChar(32)
   reason       String   // short note: "salary", "groceries", "Kasma Shop sale", etc.
   createdAt    DateTime @default(now())
 
   @@index([telegramId])
   @@index([telegramId, createdAt])
+}
+
+model Budget {
+  id             Int      @id @default(autoincrement())
+  telegramId     String
+  category       String   @db.VarChar(32)
+  monthlyLimit   Decimal  @db.Decimal(14, 2)
+  alerted80Month String?
+  alerted100Month String?
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  @@unique([telegramId, category])
 }

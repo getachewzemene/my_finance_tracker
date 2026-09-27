@@ -14,7 +14,10 @@
         <p class="eyebrow">PERSONAL LEDGER</p>
         <h1>My Finances</h1>
       </div>
-      <time class="today-label" id="todayLabel"></time>
+      <div class="header-meta">
+        <span class="currency-badge" id="currencyBadge">ETB</span>
+        <time class="today-label" id="todayLabel"></time>
+      </div>
     </header>
 
     <section class="summary-grid" id="summaryGrid">
@@ -45,10 +48,14 @@
         <button type="button" class="type-btn" data-type="EXPENSE" aria-pressed="false">Expense</button>
       </div>
       <form id="txForm">
-        <label class="sr-only" for="amount">Amount</label>
-        <input type="number" id="amount" placeholder="Amount" inputmode="decimal" step="0.01" min="0.01" required />
+        <label class="sr-only" for="amount">Amount in ETB</label>
+        <input type="number" id="amount" placeholder="Amount (ETB)" inputmode="decimal" step="0.01" min="0.01" max="999999999999.99" required />
         <label class="sr-only" for="reason">Reason</label>
         <input type="text" id="reason" placeholder="Reason (e.g. salary, groceries)" maxlength="200" required />
+        <label class="field-label" for="category">Category</label>
+        <select id="category" required>
+          <option value="Other">Other</option>
+        </select>
         <div class="quick-reasons" aria-label="Common reasons">
           <button type="button" class="reason-chip" data-reason="Groceries">Groceries</button>
           <button type="button" class="reason-chip" data-reason="Transport">Transport</button>
@@ -85,7 +92,62 @@
         <span id="resultCount">0 entries</span>
         <span>Net <strong id="resultNet">—</strong></span>
       </div>
+      <form id="exportForm" class="export-form">
+        <div class="export-dates">
+          <div>
+            <label for="exportFrom">From</label>
+            <input type="date" id="exportFrom" required />
+          </div>
+          <div>
+            <label for="exportTo">To</label>
+            <input type="date" id="exportTo" required />
+          </div>
+        </div>
+        <button type="submit" id="exportButton">Export CSV</button>
+        <p class="export-status" id="exportStatus" role="status" aria-live="polite"></p>
+      </form>
       <ul id="txList"></ul>
+    </section>
+
+    <section class="category-report" aria-labelledby="categoryReportTitle">
+      <div class="category-report-heading">
+        <div>
+          <p class="eyebrow">INSIGHTS</p>
+          <h2 id="categoryReportTitle">By category</h2>
+        </div>
+        <label class="sr-only" for="categoryPeriod">Report period</label>
+        <select id="categoryPeriod" class="category-period-select">
+          <option value="week">This week</option>
+          <option value="month" selected>This month</option>
+          <option value="year">This year</option>
+        </select>
+      </div>
+      <div id="categorySummary" aria-live="polite">
+        <p class="report-empty">Loading categories...</p>
+      </div>
+    </section>
+
+    <section class="budget-section" aria-labelledby="budgetTitle">
+      <div class="budget-heading">
+        <div>
+          <p class="eyebrow">MONTHLY PLAN</p>
+          <h2 id="budgetTitle">Category budgets</h2>
+        </div>
+      </div>
+      <form id="budgetForm" class="budget-form">
+        <label class="sr-only" for="budgetCategory">Expense category</label>
+        <select id="budgetCategory" required>
+          <option value="Food">Food</option>
+        </select>
+        <label class="sr-only" for="budgetLimit">Monthly limit in ETB</label>
+        <input type="number" id="budgetLimit" placeholder="Monthly limit (ETB)" inputmode="decimal" step="0.01" min="0.01" max="999999999999.99" required />
+        <button type="submit" id="budgetSubmit">Save budget</button>
+      </form>
+      <p class="budget-caption">Telegram alerts at 80% and when the limit is reached.</p>
+      <p class="error" id="budgetError" role="status" aria-live="polite"></p>
+      <div id="budgetList" aria-live="polite">
+        <p class="report-empty">Loading budgets...</p>
+      </div>
     </section>
   </div>
 

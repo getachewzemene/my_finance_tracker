@@ -15,6 +15,17 @@ const initData = tg?.initData || "";
 let currentType = "INCOME";
 let activePeriod = "all";
 let activeFilterType = "all";
+let currencyCode = "ETB";
+let categoriesByType = {
+  INCOME: ["Salary", "Business", "Investment", "Gift", "Other"],
+  EXPENSE: ["Food", "Transport", "Bills", "Housing", "Shopping", "Health", "Entertainment", "Other"],
+};
+let currencyFormatter = new Intl.NumberFormat(undefined, {
+  style: "currency",
+  currency: currencyCode,
+  minimumFractionDigits: 2,
+  maximumFractionDigits: 2,
+});
 
 const els = {
   typeButtons: document.querySelectorAll(".type-btn"),
@@ -24,18 +35,52 @@ const els = {
   form: document.getElementById("txForm"),
   amount: document.getElementById("amount"),
   reason: document.getElementById("reason"),
+  category: document.getElementById("category"),
+  categoryPeriod: document.getElementById("categoryPeriod"),
+  categorySummary: document.getElementById("categorySummary"),
+  budgetForm: document.getElementById("budgetForm"),
+  budgetCategory: document.getElementById("budgetCategory"),
+  budgetLimit: document.getElementById("budgetLimit"),
+  budgetSubmit: document.getElementById("budgetSubmit"),
+  budgetError: document.getElementById("budgetError"),
+  budgetList: document.getElementById("budgetList"),
   submitBtn: document.getElementById("submitBtn"),
   formError: document.getElementById("formError"),
   txList: document.getElementById("txList"),
   todayLabel: document.getElementById("todayLabel"),
+  currencyBadge: document.getElementById("currencyBadge"),
+  amountLabel: document.querySelector('label[for="amount"]'),
   txCount: document.getElementById("txCount"),
   periodLabel: document.getElementById("periodLabel"),
   resultCount: document.getElementById("resultCount"),
   resultNet: document.getElementById("resultNet"),
+  exportForm: document.getElementById("exportForm"),
+  exportFrom: document.getElementById("exportFrom"),
+  exportTo: document.getElementById("exportTo"),
+  exportButton: document.getElementById("exportButton"),
+  exportStatus: document.getElementById("exportStatus"),
 };
 
 function fmt(n) {
-  return Number(n).toLocaleString(undefined, { maximumFractionDigits: 2 });
+  return currencyFormatter.format(Number(n));
+}
+
+function fmtPlain(n) {
+  return Number(n).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+}
+
+function setCurrency(code) {
+  if (code === currencyCode) return;
+  currencyCode = code;
+  currencyFormatter = new Intl.NumberFormat(undefined, {
+    style: "currency",
+    currency: currencyCode,
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  });
+  els.currencyBadge.textContent = currencyCode;
+  els.amount.placeholder = `Amount (${currencyCode})`;
+  els.amountLabel.textContent = `Amount in ${currencyCode}`;
 }
 
 function setType(type) {
@@ -47,6 +92,15 @@ function setType(type) {
   });
   els.submitBtn.textContent = type === "INCOME" ? "Add Income" : "Add Expense";
   els.submitBtn.classList.toggle("expense-submit", type === "EXPENSE");
+  const categories = categoriesByType[type] || ["Other"];
+  const selectedCategory = els.category.value;
+  els.category.replaceChildren(...categories.map((name) => {
+    const option = document.createElement("option");
+    option.value = name;
+    option.textContent = name;
+    return option;
+  }));
+  els.category.value = categories.includes(selectedCategory) ? selectedCategory : "Other";
 }
 
 els.typeButtons.forEach((btn) => {
@@ -85,6 +139,8 @@ els.filterTypeButtons.forEach((button) => {
   });
 });
 
+els.categoryPeriod.addEventListener("change", () => refreshCategorySummary());
+
 els.reasonChips.forEach((button) => {
   button.addEventListener("click", () => {
     els.reason.value = button.dataset.reason;
@@ -118,15 +174,158 @@ async function api(path, options = {}) {
 
 async function loadSummary() {
   const data = await api("/api/summary/all");
+  setCurrency(data.week.currencyCode);
   for (const period of ["week", "month", "year"]) {
     const s = data[period];
     const net = document.getElementById(`${period}-net`);
-    net.textContent = fmt(s.net);
-    net.classList.toggle("positive", s.net >= 0);
-    net.classList.toggle("negative", s.net < 0);
-    document.getElementById(`${period}-income`).textContent = fmt(s.income);
-    document.getElementById(`${period}-expense`).textContent = fmt(s.expense);
+    net.textContent = fmtPlain(s.net);
+    net.classList.toggle("positive", Number(s.net) >= 0);
+    net.classList.toggle("negative", Number(s.net) < 0);
+    document.getElementById(`${period}-income`).textContent = fmtPlain(s.income);
+    document.getElementById(`${period}-expense`).textContent = fmtPlain(s.expense);
   }
+}
+
+async function loadCategorySummary() {
+  const rows = await api(`/api/summary/categories?period=${els.categoryPeriod.value}`);
+  els.categorySummary.replaceChildren();
+
+  if (rows.length === 0) {
+    const empty = document.createElement("p");
+    empty.className = "report-empty";
+    empty.textContent = "No categorized entries for this period yet.";
+    els.categorySummary.appendChild(empty);
+    return;
+  }
+
+  const maximum = Math.max(...rows.map((row) => Number(row.amount)), 0);
+  const list = document.createElement("div");
+  list.className = "category-rows";
+
+  for (const row of rows) {
+    const item = document.createElement("div");
+    item.className = "category-row";
+    const heading = document.createElement("div");
+    heading.className = "category-row-heading";
+    const name = document.createElement("span");
+    name.className = "category-name";
+    name.textContent = row.category;
+    const type = document.createElement("span");
+    type.className = `category-kind ${row.type === "INCOME" ? "income" : "expense"}`;
+    type.textContent = row.type === "INCOME" ? "Income" : "Expense";
+    const amount = document.createElement("strong");
+    amount.className = `category-amount ${row.type === "INCOME" ? "income" : "expense"}`;
+    amount.textContent = fmt(row.amount);
+    heading.append(name, type, amount);
+
+    const track = document.createElement("div");
+    track.className = "category-track";
+    track.setAttribute("aria-hidden", "true");
+    const fill = document.createElement("span");
+    fill.className = `category-fill ${row.type === "INCOME" ? "income" : "expense"}`;
+    fill.style.width = `${maximum ? Math.max(3, Number(row.amount) / maximum * 100) : 0}%`;
+    track.appendChild(fill);
+    item.append(heading, track);
+    list.appendChild(item);
+  }
+
+  els.categorySummary.appendChild(list);
+}
+
+async function loadAppConfig() {
+  try {
+    const res = await fetch("/api/config");
+    if (!res.ok) return;
+    const config = await res.json();
+    if (config.currencyCode) setCurrency(config.currencyCode);
+    if (config.categories) categoriesByType = config.categories;
+  } catch {
+    // Keep the fallback category until configuration is reachable.
+  }
+  setType(currentType);
+  const categories = categoriesByType.EXPENSE || ["Other"];
+  const selectedCategory = els.budgetCategory.value;
+  els.budgetCategory.replaceChildren(...categories.map((name) => {
+    const option = document.createElement("option");
+    option.value = name;
+    option.textContent = name;
+    return option;
+  }));
+  els.budgetCategory.value = categories.includes(selectedCategory) ? selectedCategory : categories[0];
+}
+
+async function loadBudgets() {
+  const budgets = await api("/api/budgets");
+  els.budgetList.replaceChildren();
+
+  if (budgets.length === 0) {
+    const empty = document.createElement("p");
+    empty.className = "report-empty";
+    empty.textContent = "No budgets yet. Set a monthly cap for an expense category.";
+    els.budgetList.appendChild(empty);
+    return;
+  }
+
+  for (const budget of budgets) {
+    const row = document.createElement("div");
+    row.className = "budget-row";
+    const heading = document.createElement("div");
+    heading.className = "budget-row-heading";
+    const category = document.createElement("strong");
+    category.className = "budget-name";
+    category.textContent = budget.category;
+    const percent = Number(budget.percent);
+    const status = document.createElement("span");
+    status.className = `budget-percent ${percent >= 100 ? "over" : percent >= 80 ? "warning" : ""}`;
+    status.textContent = `${Math.round(percent)}%`;
+    const remove = document.createElement("button");
+    remove.type = "button";
+    remove.className = "budget-remove";
+    remove.dataset.category = budget.category;
+    remove.setAttribute("aria-label", `Remove ${budget.category} budget`);
+    remove.title = "Remove budget";
+    remove.textContent = "×";
+    heading.append(category, status, remove);
+
+    const values = document.createElement("div");
+    values.className = "budget-values";
+    const spent = document.createElement("span");
+    spent.textContent = `${fmt(budget.spent)} spent of ${fmt(budget.monthlyLimit)}`;
+    const remaining = document.createElement("span");
+    const remainingAmount = Number(budget.remaining);
+    remaining.textContent = remainingAmount >= 0
+      ? `${fmt(remainingAmount)} left`
+      : `${fmt(Math.abs(remainingAmount))} over`;
+    remaining.className = remainingAmount < 0 ? "over" : "";
+    values.append(spent, remaining);
+
+    const track = document.createElement("div");
+    track.className = "budget-track";
+    track.setAttribute("role", "progressbar");
+    track.setAttribute("aria-label", `${budget.category} monthly budget used`);
+    track.setAttribute("aria-valuemin", "0");
+    track.setAttribute("aria-valuemax", "100");
+    track.setAttribute("aria-valuenow", String(Math.min(100, Math.max(0, percent))));
+    const fill = document.createElement("span");
+    fill.className = `budget-fill ${percent >= 100 ? "over" : percent >= 80 ? "warning" : ""}`;
+    fill.style.width = `${Math.min(100, Math.max(0, percent))}%`;
+    track.appendChild(fill);
+    row.append(heading, values, track);
+    els.budgetList.appendChild(row);
+  }
+
+  els.budgetList.querySelectorAll(".budget-remove").forEach((button) => {
+    button.addEventListener("click", async () => {
+      button.disabled = true;
+      try {
+        await api(`/api/budgets/${encodeURIComponent(button.dataset.category)}`, { method: "DELETE" });
+        await loadBudgets();
+      } catch (err) {
+        els.budgetError.textContent = err.message;
+        button.disabled = false;
+      }
+    });
+  });
 }
 
 async function loadTransactions() {
@@ -134,16 +333,16 @@ async function loadTransactions() {
   if (activeFilterType !== "all") params.set("type", activeFilterType);
   const rows = await api(`/api/transactions?${params}`);
   els.txList.innerHTML = "";
-  const net = rows.reduce(
-    (total, tx) => total + (tx.type === "INCOME" ? tx.amount : -tx.amount),
+  const netMinor = rows.reduce(
+    (total, tx) => total + Math.round(Number(tx.amount) * 100) * (tx.type === "INCOME" ? 1 : -1),
     0
   );
   const countText = `${rows.length} ${rows.length === 1 ? "entry" : "entries"}`;
   els.resultCount.textContent = countText;
   els.txCount.textContent = rows.length ? `${countText} shown` : "No matching entries";
-  els.resultNet.textContent = `${net > 0 ? "+" : ""}${fmt(net)}`;
-  els.resultNet.classList.toggle("positive", net >= 0);
-  els.resultNet.classList.toggle("negative", net < 0);
+  els.resultNet.textContent = `${netMinor > 0 ? "+" : ""}${fmt((netMinor / 100).toFixed(2))}`;
+  els.resultNet.classList.toggle("positive", netMinor >= 0);
+  els.resultNet.classList.toggle("negative", netMinor < 0);
 
   if (rows.length === 0) {
     const empty = document.createElement("li");
@@ -216,9 +415,21 @@ async function refreshTransactions() {
   }
 }
 
+async function refreshCategorySummary() {
+  try {
+    await loadCategorySummary();
+  } catch (err) {
+    els.categorySummary.replaceChildren();
+    const message = document.createElement("p");
+    message.className = "report-empty";
+    message.textContent = err.message;
+    els.categorySummary.appendChild(message);
+  }
+}
+
 async function refresh() {
   try {
-    await Promise.all([loadSummary(), loadTransactions()]);
+    await Promise.all([loadSummary(), loadTransactions(), loadCategorySummary(), loadBudgets()]);
   } catch (err) {
     els.formError.textContent = err.message;
   }
@@ -228,6 +439,68 @@ els.todayLabel.textContent = new Date().toLocaleDateString(undefined, {
   weekday: "short",
   month: "short",
   day: "numeric",
+});
+
+function toLocalDateInputValue(date) {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const day = String(date.getDate()).padStart(2, "0");
+  return `${year}-${month}-${day}`;
+}
+
+const exportToday = new Date();
+els.exportFrom.value = toLocalDateInputValue(new Date(exportToday.getFullYear(), exportToday.getMonth(), 1));
+els.exportTo.value = toLocalDateInputValue(exportToday);
+
+els.exportForm.addEventListener("submit", async (event) => {
+  event.preventDefault();
+  els.exportStatus.textContent = "";
+  const from = els.exportFrom.value;
+  const to = els.exportTo.value;
+  if (!from || !to || from > to) {
+    els.exportStatus.textContent = "Choose a valid date range.";
+    return;
+  }
+
+  const fromDate = new Date(`${from}T00:00:00`);
+  const toDateExclusive = new Date(`${to}T00:00:00`);
+  toDateExclusive.setDate(toDateExclusive.getDate() + 1);
+  const params = new URLSearchParams({
+    from,
+    to,
+    fromOffset: String(fromDate.getTimezoneOffset()),
+    toOffset: String(toDateExclusive.getTimezoneOffset()),
+  });
+
+  els.exportButton.disabled = true;
+  els.exportButton.textContent = "Preparing...";
+  try {
+    if (!initData) throw new Error("Open this page from inside Telegram to sign in.");
+    const response = await fetch(`/api/transactions/export.csv?${params}`, {
+      headers: { "X-Telegram-Init-Data": initData },
+    });
+    if (response.status === 401) throw new Error("Session expired — close and reopen the Mini App.");
+    if (!response.ok) {
+      const body = await response.json().catch(() => ({}));
+      throw new Error(body.error || `Export failed (${response.status})`);
+    }
+
+    const blob = await response.blob();
+    const objectUrl = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = objectUrl;
+    link.download = `transactions-${from}-to-${to}.csv`;
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+    URL.revokeObjectURL(objectUrl);
+    els.exportStatus.textContent = "CSV downloaded.";
+  } catch (err) {
+    els.exportStatus.textContent = err.message;
+  } finally {
+    els.exportButton.disabled = false;
+    els.exportButton.textContent = "Export CSV";
+  }
 });
 
 els.form.addEventListener("submit", async (e) => {
@@ -242,6 +515,7 @@ els.form.addEventListener("submit", async (e) => {
       body: JSON.stringify({
         type: currentType,
         amount: els.amount.value,
+        category: els.category.value,
         reason: els.reason.value,
       }),
     });
@@ -258,4 +532,31 @@ els.form.addEventListener("submit", async (e) => {
   }
 });
 
-refresh();
+els.budgetForm.addEventListener("submit", async (e) => {
+  e.preventDefault();
+  els.budgetError.textContent = "";
+  els.budgetSubmit.disabled = true;
+  els.budgetSubmit.textContent = "Saving...";
+
+  try {
+    await api("/api/budgets", {
+      method: "POST",
+      body: JSON.stringify({
+        category: els.budgetCategory.value,
+        monthlyLimit: els.budgetLimit.value,
+      }),
+    });
+    els.budgetLimit.value = "";
+    await loadBudgets();
+    tg?.HapticFeedback?.notificationOccurred("success");
+  } catch (err) {
+    els.budgetError.textContent = err.message;
+    tg?.HapticFeedback?.notificationOccurred("error");
+  } finally {
+    els.budgetSubmit.disabled = false;
+    els.budgetSubmit.textContent = "Save budget";
+  }
+});
+
+setType(currentType);
+loadAppConfig().then(refresh);

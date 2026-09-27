@@ -9,8 +9,12 @@
 </head>
 <body>
   <div id="app">
-    <header>
-      <h1>My Finances</h1>
+    <header class="app-header">
+      <div>
+        <p class="eyebrow">PERSONAL LEDGER</p>
+        <h1>My Finances</h1>
+      </div>
+      <time class="today-label" id="todayLabel"></time>
     </header>
 
     <section class="summary-grid" id="summaryGrid">
@@ -32,20 +36,55 @@
     </section>
 
     <section class="add-form">
-      <div class="type-toggle">
-        <button type="button" class="type-btn active" data-type="INCOME">Income</button>
-        <button type="button" class="type-btn" data-type="EXPENSE">Expense</button>
+      <div class="form-heading">
+        <h2>New entry</h2>
+        <span>INCOME / EXPENSE</span>
+      </div>
+      <div class="type-toggle" role="group" aria-label="Transaction type">
+        <button type="button" class="type-btn active" data-type="INCOME" aria-pressed="true">Income</button>
+        <button type="button" class="type-btn" data-type="EXPENSE" aria-pressed="false">Expense</button>
       </div>
       <form id="txForm">
-        <input type="number" id="amount" placeholder="Amount" step="0.01" min="0.01" required />
+        <label class="sr-only" for="amount">Amount</label>
+        <input type="number" id="amount" placeholder="Amount" inputmode="decimal" step="0.01" min="0.01" required />
+        <label class="sr-only" for="reason">Reason</label>
         <input type="text" id="reason" placeholder="Reason (e.g. salary, groceries)" maxlength="200" required />
+        <div class="quick-reasons" aria-label="Common reasons">
+          <button type="button" class="reason-chip" data-reason="Groceries">Groceries</button>
+          <button type="button" class="reason-chip" data-reason="Transport">Transport</button>
+          <button type="button" class="reason-chip" data-reason="Bills">Bills</button>
+          <button type="button" class="reason-chip" data-reason="Salary">Salary</button>
+        </div>
         <button type="submit" id="submitBtn">Add Income</button>
       </form>
-      <p class="error" id="formError"></p>
+      <p class="error" id="formError" role="status" aria-live="polite"></p>
     </section>
 
     <section class="tx-list">
-      <h2>Recent</h2>
+      <div class="activity-heading">
+        <div>
+          <h2>Activity</h2>
+          <p id="txCount">Recent transactions</p>
+        </div>
+        <span class="period-label" id="periodLabel">All time</span>
+      </div>
+      <div class="filter-block">
+        <div class="segmented period-filter" role="group" aria-label="Filter by date">
+          <button type="button" data-period="today" aria-pressed="false">Today</button>
+          <button type="button" data-period="week" aria-pressed="false">Week</button>
+          <button type="button" data-period="month" aria-pressed="false">Month</button>
+          <button type="button" class="selected" data-period="all" aria-pressed="true">All</button>
+        </div>
+        <div class="segmented type-filter" role="group" aria-label="Filter by transaction type">
+          <button type="button" class="selected" data-filter-type="all" aria-pressed="true">All entries</button>
+          <button type="button" data-filter-type="INCOME" aria-pressed="false">Income</button>
+          <button type="button" data-filter-type="EXPENSE" aria-pressed="false">Expense</button>
+        </div>
+      </div>
+      <div class="activity-summary" aria-live="polite">
+        <span id="resultCount">0 entries</span>
+        <span>Net <strong id="resultNet">—</strong></span>
+      </div>
       <ul id="txList"></ul>
     </section>
   </div>

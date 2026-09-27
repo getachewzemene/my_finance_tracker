@@ -5,15 +5,16 @@
   --button: var(--tg-theme-button-color, #2ea6ff);
   --button-text: var(--tg-theme-button-text-color, #ffffff);
   --secondary-bg: var(--tg-theme-secondary-bg-color, #f2f2f7);
-  --income: #1fae5a;
-  --expense: #e0453b;
+  --income: #159653;
+  --expense: #d94b4b;
+  --line: rgba(127, 140, 150, 0.2);
 }
 
 * { box-sizing: border-box; }
 
 body {
   margin: 0;
-  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
   background: var(--bg);
   color: var(--text);
 }
@@ -21,25 +22,48 @@ body {
 #app {
   max-width: 480px;
   margin: 0 auto;
-  padding: 16px 16px 32px;
+  padding: 18px 16px calc(28px + env(safe-area-inset-bottom));
 }
 
-header h1 {
-  font-size: 20px;
-  margin: 8px 0 16px;
+.app-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: end;
+  gap: 12px;
+  margin: 4px 0 18px;
+}
+
+.eyebrow {
+  margin: 0 0 4px;
+  color: var(--hint);
+  font-size: 10px;
+  font-weight: 700;
+}
+
+.app-header h1 {
+  font-size: 21px;
+  line-height: 1.2;
+  margin: 0;
+}
+
+.today-label {
+  color: var(--hint);
+  font-size: 12px;
+  white-space: nowrap;
 }
 
 .summary-grid {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
-  gap: 8px;
-  margin-bottom: 20px;
+  gap: 7px;
+  margin-bottom: 18px;
 }
 
 .summary-card {
   background: var(--secondary-bg);
-  border-radius: 12px;
-  padding: 10px 8px;
+  border-radius: 8px;
+  padding: 11px 7px 10px;
+  min-width: 0;
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -47,41 +71,74 @@ header h1 {
 }
 
 .summary-card .label {
-  font-size: 12px;
+  font-size: 10px;
   color: var(--hint);
   text-transform: uppercase;
-  letter-spacing: 0.02em;
+  font-weight: 700;
 }
 
 .summary-card .net {
-  font-size: 18px;
+  max-width: 100%;
+  overflow-wrap: anywhere;
+  font-size: 17px;
   font-weight: 700;
-  margin: 4px 0;
+  margin: 5px 0 4px;
 }
 
 .summary-card .breakdown {
-  font-size: 11px;
+  font-size: 10px;
   color: var(--hint);
+  white-space: nowrap;
 }
+
+.positive { color: var(--income); }
+.negative { color: var(--expense); }
 
 .add-form {
   background: var(--secondary-bg);
-  border-radius: 14px;
+  border-radius: 8px;
   padding: 14px;
-  margin-bottom: 20px;
+  margin-bottom: 22px;
+}
+
+.form-heading,
+.activity-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.form-heading {
+  margin-bottom: 12px;
+}
+
+.form-heading h2 {
+  font-size: 15px;
+  margin: 0;
+}
+
+.form-heading span {
+  color: var(--hint);
+  font-size: 9px;
+  font-weight: 700;
 }
 
 .type-toggle {
   display: flex;
-  gap: 8px;
-  margin-bottom: 12px;
+  gap: 5px;
+  padding: 4px;
+  border-radius: 8px;
+  background: var(--bg);
+  margin-bottom: 10px;
 }
 
 .type-btn {
   flex: 1;
-  padding: 8px;
+  min-height: 34px;
+  padding: 7px 10px;
   border: none;
-  border-radius: 10px;
+  border-radius: 6px;
   background: transparent;
   color: var(--hint);
   font-weight: 600;
@@ -101,21 +158,30 @@ header h1 {
 #txForm {
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 9px;
 }
 
 #txForm input {
+  width: 100%;
+  min-height: 44px;
   padding: 10px 12px;
-  border-radius: 10px;
-  border: 1px solid #dcdcdc;
-  font-size: 15px;
+  border-radius: 7px;
+  border: 1px solid var(--line);
+  font: inherit;
+  font-size: 14px;
   background: var(--bg);
   color: var(--text);
 }
 
+#txForm input:focus {
+  outline: 2px solid var(--button);
+  outline-offset: 1px;
+}
+
 #txForm button {
-  padding: 10px;
-  border-radius: 10px;
+  min-height: 42px;
+  padding: 10px 12px;
+  border-radius: 7px;
   border: none;
   background: var(--button);
   color: var(--button-text);
@@ -124,17 +190,140 @@ header h1 {
   cursor: pointer;
 }
 
+#txForm button.expense-submit {
+  background: var(--expense);
+}
+
+.type-btn,
+.reason-chip,
+.segmented button,
+.del-btn,
+#txForm button {
+  transition: opacity 120ms ease, background-color 120ms ease, transform 120ms ease;
+}
+
+button { -webkit-tap-highlight-color: transparent; }
+button:active:not(:disabled) { transform: scale(0.98); }
+button:focus-visible { outline: 2px solid var(--button); outline-offset: 2px; }
+button:disabled { cursor: wait; opacity: 0.65; }
+
+.quick-reasons {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin: -1px 0 2px;
+}
+
+.reason-chip {
+  min-height: 28px;
+  padding: 5px 9px;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  background: transparent;
+  color: var(--hint);
+  font-size: 11px;
+  cursor: pointer;
+}
+
+.reason-chip:hover { color: var(--text); }
+
 .error {
   color: var(--expense);
   font-size: 13px;
-  min-height: 16px;
-  margin: 6px 0 0;
+  min-height: 0;
+  margin: 0;
 }
 
-.tx-list h2 {
-  font-size: 15px;
+.error:not(:empty) {
+  margin-top: 8px;
+}
+
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+.activity-heading {
+  margin-bottom: 11px;
+}
+
+.activity-heading h2 {
+  font-size: 16px;
+  margin: 0;
+}
+
+.activity-heading p {
   color: var(--hint);
-  margin-bottom: 8px;
+  font-size: 11px;
+  margin: 3px 0 0;
+}
+
+.period-label {
+  padding: 5px 8px;
+  border-radius: 6px;
+  background: var(--secondary-bg);
+  color: var(--hint);
+  font-size: 10px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.filter-block {
+  display: grid;
+  gap: 7px;
+  margin-bottom: 10px;
+}
+
+.segmented {
+  display: grid;
+  gap: 3px;
+  padding: 3px;
+  background: var(--secondary-bg);
+  border-radius: 8px;
+}
+
+.period-filter { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+.type-filter { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+
+.segmented button {
+  min-width: 0;
+  min-height: 32px;
+  padding: 6px 4px;
+  border: 0;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--hint);
+  font-size: 11px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.segmented button.selected {
+  background: var(--bg);
+  color: var(--text);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.12);
+}
+
+.activity-summary {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 9px 1px;
+  border-bottom: 1px solid var(--line);
+  color: var(--hint);
+  font-size: 11px;
+}
+
+.activity-summary strong {
+  margin-left: 4px;
+  font-size: 12px;
 }
 
 #txList {
@@ -147,21 +336,30 @@ header h1 {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 10px 0;
-  border-bottom: 1px solid var(--secondary-bg);
+  gap: 10px;
+  min-height: 58px;
+  padding: 8px 0;
+  border-bottom: 1px solid var(--line);
+}
+
+.tx-item > div:first-child {
+  min-width: 0;
 }
 
 .tx-item .tx-reason {
   font-size: 14px;
+  overflow-wrap: anywhere;
 }
 
 .tx-item .tx-date {
   font-size: 11px;
   color: var(--hint);
   display: block;
+  margin-top: 2px;
 }
 
 .tx-item .tx-amount {
+  white-space: nowrap;
   font-weight: 700;
   font-size: 14px;
 }
@@ -169,11 +367,42 @@ header h1 {
 .tx-amount.income { color: var(--income); }
 .tx-amount.expense { color: var(--expense); }
 
-.tx-item .del-btn {
+.tx-actions {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  flex-shrink: 0;
+}
+
+.del-btn {
+  display: grid;
+  place-items: center;
+  width: 34px;
+  height: 34px;
   background: none;
   border: none;
   color: var(--hint);
-  font-size: 16px;
+  font-size: 20px;
   cursor: pointer;
-  padding: 0 0 0 10px;
+  border-radius: 6px;
+}
+
+.del-btn:hover {
+  color: var(--expense);
+  background: var(--secondary-bg);
+}
+
+.empty-state {
+  padding: 20px 8px;
+  color: var(--hint);
+  text-align: center;
+  font-size: 13px;
+}
+
+@media (max-width: 360px) {
+  #app { padding-right: 12px; padding-left: 12px; }
+  .summary-grid { gap: 5px; }
+  .summary-card { padding-right: 4px; padding-left: 4px; }
+  .summary-card .breakdown { font-size: 9px; }
+  .segmented button { font-size: 10px; }
 }

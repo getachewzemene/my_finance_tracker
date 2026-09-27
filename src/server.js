@@ -5,6 +5,7 @@ const cors = require("cors");
 const prisma = require("./db");
 const { validateInitData, AuthError } = require("./auth");
 const { computeSummary, computeAllSummaries } = require("./summaryService");
+const { getRange } = require("./utils/dateRanges");
 const { bot, configureBot } = require("./bot");
 
 const app = express();
@@ -75,10 +76,28 @@ app.post("/api/transactions", async (req, res) => {
 
 // List recent transactions for the authenticated user
 app.get("/api/transactions", async (req, res) => {
+  const period = req.query.period || "all";
+  const type = req.query.type;
   const limit = Math.min(Number(req.query.limit) || 50, 200);
 
+  if (!["all", "today", "week", "month", "year"].includes(period)) {
+    return res.status(400).json({ error: "period must be all, today, week, month, or year" });
+  }
+  if (type && !["INCOME", "EXPENSE"].includes(type)) {
+    return res.status(400).json({ error: "type must be INCOME or EXPENSE" });
+  }
+
+  const where = { telegramId: req.telegramId };
+  if (period !== "all") {
+    const { start, end } = getRange(period);
+    where.createdAt = { gte: start, lt: end };
+  }
+  if (type) {
+    where.type = type;
+  }
+
   const rows = await prisma.transaction.findMany({
-    where: { telegramId: req.telegramId },
+    where,
     orderBy: { createdAt: "desc" },
     take: limit,
   });

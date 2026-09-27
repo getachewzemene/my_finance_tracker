@@ -10,6 +10,12 @@ function startOfDay(d) {
 function getRange(period, ref = new Date()) {
   const now = startOfDay(ref);
 
+  if (period === "today") {
+    const end = new Date(now);
+    end.setDate(now.getDate() + 1);
+    return { start: now, end };
+  }
+
   if (period === "week") {
     const day = now.getDay(); // 0 = Sun ... 6 = Sat
     const diffToMonday = (day + 6) % 7; // days since most recent Monday

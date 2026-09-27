@@ -118,7 +118,7 @@ curl http://localhost:3000/api/summary/all \
 | Method | Path | Body / Query | Description |
 |---|---|---|---|
 | POST | `/api/transactions` | `{ userId, type: "INCOME"\|"EXPENSE", amount, reason }` | Add an entry |
-| GET | `/api/transactions?userId=&limit=` | — | Recent entries for a user |
+| GET | `/api/transactions?limit=&period=&type=` | — | Recent entries; period: all, today, week, month, or year; type: INCOME or EXPENSE |
 | DELETE | `/api/transactions/:id?userId=` | — | Delete one entry |
 | GET | `/api/summary?userId=&period=week\|month\|year` | — | Totals for one period |
 | GET | `/api/summary/all?userId=` | — | Week + month + year totals in one call |

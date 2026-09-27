@@ -98,6 +98,11 @@ curl http://localhost:3000/api/summary/all \
    `DATABASE_URL`. Use `npx prisma migrate dev` when creating new migrations
    during development.
 
+   Prisma Client is also generated automatically after `npm install` or
+   `npm ci`. In Render, use `npm ci` as the build command and
+   `npx prisma migrate deploy && npm start` as the start command. Render runs
+   Linux commands, so `&&` is valid there (unlike older Windows PowerShell).
+
 5. **Run**
    ```bash
    npm start

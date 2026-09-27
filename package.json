@@ -5,6 +5,7 @@
   "main": "src/server.js",
   "type": "commonjs",
   "scripts": {
+    "postinstall": "prisma generate",
     "start": "node src/server.js",
     "dev": "node src/server.js",
     "prisma:generate": "prisma generate",
@@ -18,9 +19,7 @@
     "cors": "^2.8.5",
     "dotenv": "^16.4.5",
     "express": "^4.19.2",
+    "prisma": "^5.20.0",
     "telegraf": "^4.16.3"
-  },
-  "devDependencies": {
-    "prisma": "^5.20.0"
   }
 }

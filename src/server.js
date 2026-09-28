@@ -9,7 +9,8 @@ const { listBudgets, checkBudgetThresholds } = require("./budgetService");
 const { validateInitData, AuthError } = require("./auth");
 const { computeSummary, computeAllSummaries, computeCategorySummary } = require("./summaryService");
 const { getRange } = require("./utils/dateRanges");
-const { transactionsToCsv } = require("./csvExport");
+const { moneyToCents, centsToMoney } = require("./utils/money");
+const { transactionsToCsv, productsToCsv, salesToCsv } = require("./csvExport");
 const { bot, configureBot } = require("./bot");
 
 const app = express();
@@ -186,6 +187,12 @@ app.delete("/api/transactions/:id", async (req, res) => {
     return res.status(404).json({ error: "not found" });
   }
 
+  const linkedSale = await prisma.sale.findFirst({
+    where: { transactionId: id, telegramId: req.telegramId },
+    select: { id: true },
+  });
+  if (linkedSale) return res.status(409).json({ error: "Sale income cannot be deleted separately from its stock record" });
+
   await prisma.transaction.delete({ where: { id } });
   res.json({ ok: true });
 });
@@ -246,6 +253,227 @@ app.delete("/api/budgets/:category", async (req, res) => {
 
   await prisma.budget.deleteMany({ where: { telegramId: req.telegramId, category } });
   res.json({ ok: true });
+});
+
+const MONEY_PATTERN = /^(?:0|[1-9]\d{0,11})(?:\.\d{1,2})?$/;
+const MAX_MONEY_CENTS = 99999999999999n;
+
+app.get("/api/products", async (req, res) => {
+  const products = await prisma.product.findMany({
+    where: { telegramId: req.telegramId },
+    orderBy: { name: "asc" },
+  });
+  res.json(products);
+});
+
+app.post("/api/products", async (req, res) => {
+  const name = String(req.body.name || "").trim();
+  const quantityText = String(req.body.quantity ?? "").trim();
+  const quantity = Number(quantityText);
+  const unitCost = String(req.body.unitCost ?? "").trim();
+  const unitPrice = String(req.body.unitPrice ?? "").trim();
+
+  if (!name || name.length > 100) {
+    return res.status(400).json({ error: "name is required and must be 100 characters or fewer" });
+  }
+  if (!quantityText || !Number.isSafeInteger(quantity) || quantity < 0 || quantity > 1000000000) {
+    return res.status(400).json({ error: "quantity must be a non-negative whole number" });
+  }
+  if (!MONEY_PATTERN.test(unitCost) || Number(unitCost) <= 0) {
+    return res.status(400).json({ error: "unitCost must be positive, with up to 12 whole digits and 2 decimal places" });
+  }
+  if (!MONEY_PATTERN.test(unitPrice) || Number(unitPrice) <= 0) {
+    return res.status(400).json({ error: "unitPrice must be positive, with up to 12 whole digits and 2 decimal places" });
+  }
+
+  try {
+    const product = await prisma.product.create({
+      data: { telegramId: req.telegramId, name, quantity, unitCost, unitPrice },
+    });
+    res.json(product);
+  } catch (err) {
+    if (err.code === "P2002") return res.status(409).json({ error: "A product with that name already exists" });
+    throw err;
+  }
+});
+
+app.patch("/api/products/:id/pricing", async (req, res) => {
+  const id = Number(req.params.id);
+  const unitCost = String(req.body.unitCost ?? "").trim();
+  const unitPrice = String(req.body.unitPrice ?? "").trim();
+  if (!Number.isSafeInteger(id) || id < 1) return res.status(400).json({ error: "Invalid product id" });
+  if (!MONEY_PATTERN.test(unitCost) || Number(unitCost) <= 0) {
+    return res.status(400).json({ error: "unitCost must be positive, with up to 12 whole digits and 2 decimal places" });
+  }
+  if (!MONEY_PATTERN.test(unitPrice) || Number(unitPrice) <= 0) {
+    return res.status(400).json({ error: "unitPrice must be positive, with up to 12 whole digits and 2 decimal places" });
+  }
+
+  const result = await prisma.product.updateMany({
+    where: { id, telegramId: req.telegramId },
+    data: { unitCost, unitPrice },
+  });
+  if (!result.count) return res.status(404).json({ error: "Product not found" });
+  res.json(await prisma.product.findUnique({ where: { id } }));
+});
+
+app.post("/api/products/:id/restock", async (req, res) => {
+  const id = Number(req.params.id);
+  const quantity = Number(req.body.quantity);
+  const unitCost = String(req.body.unitCost ?? "").trim();
+  if (!Number.isSafeInteger(id) || id < 1) return res.status(400).json({ error: "Invalid product id" });
+  if (!Number.isSafeInteger(quantity) || quantity < 1 || quantity > 1000000000) {
+    return res.status(400).json({ error: "quantity must be a positive whole number" });
+  }
+  if (!MONEY_PATTERN.test(unitCost) || Number(unitCost) <= 0) {
+    return res.status(400).json({ error: "unitCost must be positive, with up to 12 whole digits and 2 decimal places" });
+  }
+
+  const result = await prisma.$transaction(async (tx) => {
+    const product = await tx.product.findFirst({ where: { id, telegramId: req.telegramId } });
+    if (!product) return { error: "Product not found", status: 404 };
+    if (product.unitCost === null) return { error: "Set the current stock cost before restocking", status: 409 };
+    const newQuantity = product.quantity + quantity;
+    if (newQuantity > 2147483647) return { error: "Stock quantity limit exceeded", status: 409 };
+
+    const totalCostCents = moneyToCents(product.unitCost) * BigInt(product.quantity)
+      + moneyToCents(unitCost) * BigInt(quantity);
+    const averageCostCents = (totalCostCents + BigInt(newQuantity) / 2n) / BigInt(newQuantity);
+    const updated = await tx.product.updateMany({
+      where: { id, telegramId: req.telegramId, quantity: product.quantity, unitCost: product.unitCost },
+      data: { quantity: newQuantity, unitCost: centsToMoney(averageCostCents) },
+    });
+    if (!updated.count) return { error: "Stock changed while restocking. Please try again", status: 409 };
+    return { product: await tx.product.findUnique({ where: { id } }) };
+  });
+  if (result.error) return res.status(result.status).json({ error: result.error });
+  res.json(result.product);
+});
+
+app.post("/api/products/:id/sales", async (req, res) => {
+  const id = Number(req.params.id);
+  const quantity = Number(req.body.quantity);
+  const unitPrice = String(req.body.unitPrice ?? "").trim();
+  if (!Number.isSafeInteger(id) || id < 1) return res.status(400).json({ error: "Invalid product id" });
+  if (!Number.isSafeInteger(quantity) || quantity < 1 || quantity > 1000000000) {
+    return res.status(400).json({ error: "quantity must be a positive whole number" });
+  }
+  if (!MONEY_PATTERN.test(unitPrice) || Number(unitPrice) <= 0) {
+    return res.status(400).json({ error: "unitPrice must be positive, with up to 12 whole digits and 2 decimal places" });
+  }
+
+  const product = await prisma.product.findFirst({ where: { id, telegramId: req.telegramId } });
+  if (!product) return res.status(404).json({ error: "Product not found" });
+  if (product.unitCost === null) return res.status(409).json({ error: "Set this product's unit cost before recording sales" });
+
+  const totalCents = moneyToCents(unitPrice) * BigInt(quantity);
+  const costTotalCents = moneyToCents(product.unitCost) * BigInt(quantity);
+  if (totalCents > MAX_MONEY_CENTS) return res.status(400).json({ error: "Sale total exceeds the supported amount" });
+  if (costTotalCents > MAX_MONEY_CENTS) return res.status(400).json({ error: "Sale cost exceeds the supported amount" });
+  if (product.quantity < quantity) return res.status(409).json({ error: "Not enough stock for this sale" });
+
+  const result = await prisma.$transaction(async (tx) => {
+    const updated = await tx.product.updateMany({
+      where: { id, telegramId: req.telegramId, quantity: { gte: quantity } },
+      data: { quantity: { decrement: quantity } },
+    });
+    if (!updated.count) return null;
+
+    const total = centsToMoney(totalCents);
+    const costTotal = centsToMoney(costTotalCents);
+    const profit = centsToMoney(totalCents - costTotalCents);
+    const income = await tx.transaction.create({
+      data: {
+        telegramId: req.telegramId,
+        type: "INCOME",
+        amount: total,
+        category: "Business",
+        reason: `Sale: ${product.name} x ${quantity}`,
+      },
+    });
+    const sale = await tx.sale.create({
+      data: {
+        telegramId: req.telegramId,
+        productId: id,
+        transactionId: income.id,
+        quantity,
+        unitCost: product.unitCost,
+        unitPrice,
+        total,
+        costTotal,
+        profit,
+      },
+      include: { product: { select: { name: true } } },
+    });
+    const remaining = await tx.product.findUnique({ where: { id }, select: { quantity: true } });
+    return { sale, remainingStock: remaining.quantity };
+  });
+
+  if (!result) return res.status(409).json({ error: "Not enough stock for this sale" });
+  res.json(result);
+});
+
+app.get("/api/sales", async (req, res) => {
+  const sales = await prisma.sale.findMany({
+    where: { telegramId: req.telegramId },
+    include: { product: { select: { name: true } } },
+    orderBy: { createdAt: "desc" },
+    take: 20,
+  });
+  res.json(sales);
+});
+
+app.get("/api/sales/summary", async (req, res) => {
+  const periods = ["today", "week", "month", "year"];
+  const summaries = await Promise.all(periods.map(async (period) => {
+    const { start, end } = getRange(period);
+    const aggregate = await prisma.sale.aggregate({
+      where: { telegramId: req.telegramId, createdAt: { gte: start, lt: end } },
+      _sum: { total: true, profit: true, quantity: true },
+      _count: { _all: true },
+    });
+    return [period, {
+      totalSales: String(aggregate._sum.total ?? "0.00"),
+      profit: String(aggregate._sum.profit ?? "0.00"),
+      saleCount: aggregate._count._all,
+      itemsSold: aggregate._sum.quantity ?? 0,
+    }];
+  }));
+  res.json(Object.fromEntries(summaries));
+});
+
+app.get("/api/products/export.csv", async (req, res) => {
+  const products = await prisma.product.findMany({
+    where: { telegramId: req.telegramId },
+    orderBy: { name: "asc" },
+  });
+  res.setHeader("Content-Type", "text/csv; charset=utf-8");
+  res.setHeader("Content-Disposition", 'attachment; filename="stock-inventory.csv"');
+  res.setHeader("Cache-Control", "private, no-store");
+  res.setHeader("X-Content-Type-Options", "nosniff");
+  res.send(productsToCsv(products));
+});
+
+app.get("/api/sales/export.csv", async (req, res) => {
+  if (typeof req.query.from !== "string" || typeof req.query.to !== "string" || req.query.from > req.query.to) {
+    return res.status(400).json({ error: "Provide a valid start date on or before the end date." });
+  }
+  const from = parseDateBoundary(req.query.from, req.query.fromOffset);
+  const until = parseDateBoundary(req.query.to, req.query.toOffset, true);
+  if (!from || !until || from >= until) {
+    return res.status(400).json({ error: "Provide a valid start date and end date, with start on or before end." });
+  }
+
+  const sales = await prisma.sale.findMany({
+    where: { telegramId: req.telegramId, createdAt: { gte: from, lt: until } },
+    include: { product: { select: { name: true } } },
+    orderBy: [{ createdAt: "asc" }, { id: "asc" }],
+  });
+  res.setHeader("Content-Type", "text/csv; charset=utf-8");
+  res.setHeader("Content-Disposition", `attachment; filename="sales-${req.query.from}-to-${req.query.to}.csv"`);
+  res.setHeader("Cache-Control", "private, no-store");
+  res.setHeader("X-Content-Type-Options", "nosniff");
+  res.send(salesToCsv(sales));
 });
 
 app.get("/health", (_req, res) => res.json({ ok: true }));

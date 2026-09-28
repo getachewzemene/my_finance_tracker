@@ -18,6 +18,7 @@ model Transaction {
   category     String   @default("Other") @db.VarChar(32)
   reason       String   // short note: "salary", "groceries", "Kasma Shop sale", etc.
   createdAt    DateTime @default(now())
+  sale         Sale?
 
   @@index([telegramId])
   @@index([telegramId, createdAt])
@@ -34,4 +35,38 @@ model Budget {
   updatedAt      DateTime @updatedAt
 
   @@unique([telegramId, category])
+}
+
+model Product {
+  id         Int      @id @default(autoincrement())
+  telegramId String
+  name       String   @db.VarChar(100)
+  quantity   Int      @default(0)
+  unitCost   Decimal? @db.Decimal(14, 2)
+  unitPrice  Decimal  @db.Decimal(14, 2)
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+  sales      Sale[]
+
+  @@unique([telegramId, name])
+  @@index([telegramId])
+}
+
+model Sale {
+  id         Int      @id @default(autoincrement())
+  telegramId String
+  productId  Int
+  transactionId Int   @unique
+  quantity   Int
+  unitCost   Decimal  @db.Decimal(14, 2)
+  unitPrice  Decimal  @db.Decimal(14, 2)
+  total      Decimal  @db.Decimal(14, 2)
+  costTotal  Decimal  @db.Decimal(14, 2)
+  profit     Decimal  @db.Decimal(14, 2)
+  createdAt  DateTime @default(now())
+  product    Product  @relation(fields: [productId], references: [id], onDelete: Restrict)
+  transaction Transaction @relation(fields: [transactionId], references: [id], onDelete: Restrict)
+
+  @@index([telegramId, createdAt])
+  @@index([productId])
 }

@@ -67,6 +67,70 @@ body {
   font-weight: 700;
 }
 
+.main-tabs {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 3px;
+  margin: 0 0 18px;
+  padding: 3px;
+  border-radius: 8px;
+  background: var(--secondary-bg);
+}
+
+.main-tab {
+  min-width: 0;
+  min-height: 40px;
+  padding: 8px 10px;
+  border: 0;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--hint);
+  font: inherit;
+  font-size: 13px;
+  font-weight: 650;
+  cursor: pointer;
+  transition: background-color 120ms ease, color 120ms ease;
+}
+
+.main-tab.active {
+  background: var(--bg);
+  color: var(--text);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.12);
+}
+
+.tab-panel[hidden] { display: none !important; }
+
+.stock-tabs {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 3px;
+  margin: 0 0 16px;
+  padding: 3px;
+  border-radius: 8px;
+  background: var(--secondary-bg);
+}
+
+.stock-tab {
+  min-height: 36px;
+  padding: 7px 8px;
+  border: 0;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--hint);
+  font: inherit;
+  font-size: 12px;
+  font-weight: 650;
+  cursor: pointer;
+}
+
+.stock-tab.active {
+  background: var(--bg);
+  color: var(--text);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.12);
+}
+
+.stock-panel[hidden] { display: none !important; }
+
 .summary-grid {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
@@ -495,6 +559,228 @@ button:disabled { cursor: wait; opacity: 0.65; }
   font-size: 13px;
 }
 
+.stock-section {
+  margin: 22px 0 8px;
+  padding-top: 16px;
+  border-top: 1px solid var(--line);
+}
+
+.stock-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 10px;
+}
+
+.stock-heading .eyebrow { margin-bottom: 3px; }
+.stock-heading h2,
+.sales-heading { margin: 0; font-size: 16px; }
+
+.stock-export-button,
+.sales-export-form > button {
+  min-height: 36px;
+  padding: 7px 10px;
+  border: 0;
+  border-radius: 6px;
+  background: var(--text);
+  color: var(--bg);
+  font-size: 11px;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.stock-export-button:disabled,
+.sales-export-form > button:disabled { opacity: 0.65; }
+
+.stock-form,
+.sell-form {
+  display: grid;
+  gap: 7px;
+  margin-bottom: 8px;
+}
+
+.stock-form { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.stock-form #stockName,
+.stock-form button { grid-column: 1 / -1; }
+.stock-form #stockPrice { grid-column: 1 / -1; }
+.sell-form { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.sell-form select,
+.sell-form button { grid-column: 1 / -1; }
+
+.stock-form input,
+.sell-form input,
+.sell-form select {
+  width: 100%;
+  min-width: 0;
+  min-height: 40px;
+  padding: 8px 10px;
+  border: 1px solid var(--line);
+  border-radius: 7px;
+  background: var(--bg);
+  color: var(--text);
+  font: inherit;
+  font-size: 12px;
+}
+
+.stock-form button,
+.sell-form button {
+  min-height: 40px;
+  padding: 8px 11px;
+  border: 0;
+  border-radius: 7px;
+  background: var(--button);
+  color: var(--button-text);
+  font-size: 12px;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.stock-form button:disabled,
+.sell-form button:disabled { opacity: 0.55; }
+
+.stock-row {
+  display: grid;
+  gap: 7px;
+  padding: 10px 0;
+  border-bottom: 1px solid var(--line);
+}
+
+.stock-details { display: grid; min-width: 0; gap: 3px; }
+.stock-name { overflow-wrap: anywhere; font-size: 13px; }
+.stock-meta { color: var(--hint); font-size: 10px; }
+.stock-meta.out-of-stock { color: var(--expense); }
+
+.stock-controls {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  align-items: start;
+  gap: 7px;
+}
+
+.stock-pricing-form {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr)) auto;
+  gap: 5px;
+  min-width: 0;
+}
+
+.stock-pricing-form input {
+  width: 100%;
+  min-width: 0;
+  min-height: 34px;
+  padding: 5px 7px;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  background: var(--bg);
+  color: var(--text);
+  font: inherit;
+  font-size: 10px;
+}
+
+.stock-pricing-form button,
+.stock-restock-form button {
+  min-height: 34px;
+  padding: 5px 8px;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  background: transparent;
+  color: var(--text);
+  font-size: 10px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.sales-summary-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 7px;
+  margin-bottom: 14px;
+}
+
+.sales-summary {
+  display: grid;
+  gap: 4px;
+  min-width: 0;
+  padding: 10px;
+  border-radius: 7px;
+  background: var(--secondary-bg);
+}
+
+.sales-summary > span {
+  color: var(--hint);
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+}
+
+.sales-summary > strong {
+  overflow-wrap: anywhere;
+  font-size: 14px;
+}
+
+.sales-summary small {
+  color: var(--hint);
+  font-size: 10px;
+}
+
+.sales-summary small b { color: var(--income); }
+
+.sales-export-form {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: end;
+  gap: 8px;
+  margin-top: 12px;
+  padding: 10px 0;
+  border-top: 1px solid var(--line);
+  border-bottom: 1px solid var(--line);
+}
+
+.sales-export-form .export-dates input { font-size: 11px; }
+
+.stock-restock-form {
+  display: grid;
+  grid-template-columns: 58px minmax(0, 1fr) auto;
+  gap: 5px;
+}
+
+.stock-restock-form input {
+  width: 100%;
+  min-width: 0;
+  min-height: 34px;
+  padding: 5px;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  background: var(--bg);
+  color: var(--text);
+  font: inherit;
+  font-size: 11px;
+}
+
+.sales-heading { margin-top: 15px; font-size: 13px; }
+.stock-sales-list { list-style: none; margin: 0; padding: 0; }
+
+.stock-sale-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+  min-height: 42px;
+  padding: 7px 0;
+  border-bottom: 1px solid var(--line);
+  font-size: 11px;
+}
+
+.sale-details,
+.sale-amounts { display: grid; gap: 3px; }
+.sale-details { min-width: 0; }
+.sale-details strong { font-size: 12px; overflow-wrap: anywhere; }
+.sale-details span,
+.sale-amounts span { color: var(--hint); font-size: 10px; }
+.sale-amounts { flex-shrink: 0; text-align: right; }
+.sale-amounts strong { font-size: 12px; }
+
 .category-report {
   margin: 22px 0 8px;
   padding-top: 16px;
@@ -725,4 +1011,7 @@ button:disabled { cursor: wait; opacity: 0.65; }
   .budget-form button { grid-column: auto; }
   .export-form { grid-template-columns: 1fr; }
   .export-form > button { width: 100%; }
+  .sales-export-form { grid-template-columns: 1fr; }
+  .sales-export-form > button { width: 100%; }
+  .stock-controls { grid-template-columns: 1fr; }
 }

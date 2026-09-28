@@ -15,7 +15,7 @@ totals (income, expense, net).
 
 ```
 financial-tracker-bot/
-├── prisma/schema.prisma   # Transaction model (type, amount, reason, telegramId)
+├── prisma/schema.prisma   # Transactions, budgets, inventory products, and sales
 ├── src/
 │   ├── server.js          # Express app + API routes
 │   ├── bot.js             # Telegram bot, /start /app /summary
@@ -132,6 +132,15 @@ curl http://localhost:3000/api/summary/all \
 | GET | `/api/budgets` | — | Current-month spending against saved category budgets |
 | POST | `/api/budgets` | `{ category, monthlyLimit }` | Create or update a recurring monthly expense budget |
 | DELETE | `/api/budgets/:category` | — | Remove a category budget |
+| GET | `/api/products` | — | List the authenticated user's inventory |
+| POST | `/api/products` | `{ name, quantity, unitCost, unitPrice }` | Add inventory with opening quantity, cost per item, and normal selling price |
+| PATCH | `/api/products/:id/pricing` | `{ unitCost, unitPrice }` | Update a product's cost and regular selling price |
+| POST | `/api/products/:id/restock` | `{ quantity, unitCost }` | Increase stock and update its weighted-average unit cost |
+| POST | `/api/products/:id/sales` | `{ quantity, unitPrice }` | Record a sale at the entered price, reduce stock, and add matching Business income atomically |
+| GET | `/api/sales` | — | List the authenticated user's 20 most recent sales |
+| GET | `/api/sales/summary` | — | Day, week, month, and year sales totals and realized profit |
+| GET | `/api/products/export.csv` | — | Export the current inventory, prices, quantities, and stock cost value |
+| GET | `/api/sales/export.csv?from=&to=` | — | Export sales, sale prices, cost, and profit for an inclusive date range |
 
 Every row above requires the `X-Telegram-Init-Data` header — there is no
 `userId` parameter anymore. The user id is derived server-side from the
@@ -148,6 +157,14 @@ verified init data (see **Auth**, above).
    requires a deliberate data conversion.
 - Expense-category budgets recur monthly and send one Telegram alert at 80%
    and one when the limit is reached or exceeded.
+- Inventory quantities are whole units. Products track weighted-average unit
+   cost and regular selling price; restocks include purchase unit cost and each
+   sale can use a different unit price. Profit is sale total minus the cost
+   snapshot for the sold quantity. Daily, weekly, monthly, and
+   yearly totals use calendar periods. Existing sales without recorded cost are
+   migrated with zero profit rather than inventing historical cost data. Legacy
+   products keep an unknown cost until updated and cannot be used for sales
+   until a cost is set.
 - "Week" = Monday–Sunday of the current calendar week; "month"/"year" are
   calendar month/year — not rolling 7/30/365-day windows.
 - Auth relies on Telegram's initData signature, not a separate password/login —

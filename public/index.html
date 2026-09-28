@@ -12,7 +12,7 @@
     <header class="app-header">
       <div>
         <p class="eyebrow">PERSONAL LEDGER</p>
-        <h1>My Finances</h1>
+        <h1 id="appTitle">My Finance</h1>
       </div>
       <div class="header-meta">
         <span class="currency-badge" id="currencyBadge">ETB</span>
@@ -20,6 +20,12 @@
       </div>
     </header>
 
+    <nav class="main-tabs" role="tablist" aria-label="Tracker sections">
+      <button type="button" id="financeTab" class="main-tab active" role="tab" aria-selected="true" aria-controls="financeView" tabindex="0" data-tab="financeView">My Finance</button>
+      <button type="button" id="stockTab" class="main-tab" role="tab" aria-selected="false" aria-controls="stockView" tabindex="-1" data-tab="stockView">My Stock</button>
+    </nav>
+
+    <div id="financeView" class="tab-panel" role="tabpanel" aria-labelledby="financeTab" data-tab-panel>
     <section class="summary-grid" id="summaryGrid">
       <div class="summary-card" data-period="week">
         <span class="label">Week</span>
@@ -149,6 +155,78 @@
         <p class="report-empty">Loading budgets...</p>
       </div>
     </section>
+    </div>
+
+    <div id="stockView" class="tab-panel" role="tabpanel" aria-labelledby="stockTab" data-tab-panel hidden>
+      <nav class="stock-tabs" role="tablist" aria-label="Stock management sections">
+        <button type="button" class="stock-tab active" id="inventoryTab" role="tab" aria-selected="true" aria-controls="inventoryPanel" tabindex="0" data-stock-tab="inventoryPanel">Stock</button>
+        <button type="button" class="stock-tab" id="salesTab" role="tab" aria-selected="false" aria-controls="salesPanel" tabindex="-1" data-stock-tab="salesPanel">Sales &amp; Profit</button>
+      </nav>
+
+      <section id="inventoryPanel" class="stock-panel" role="tabpanel" aria-labelledby="inventoryTab" data-stock-panel>
+        <div class="stock-heading">
+          <div>
+            <p class="eyebrow">INVENTORY</p>
+            <h2 id="stockTitle">Add and manage stock</h2>
+          </div>
+          <button type="button" id="stockExportButton" class="stock-export-button">Export stock</button>
+        </div>
+        <form id="stockForm" class="stock-form">
+          <label class="sr-only" for="stockName">Product name</label>
+          <input type="text" id="stockName" placeholder="Product name" maxlength="100" required />
+          <label class="sr-only" for="stockQuantity">Opening stock quantity</label>
+          <input type="number" id="stockQuantity" placeholder="Opening qty" min="0" max="1000000000" step="1" required />
+          <label class="sr-only" for="stockCost">Cost per item in ETB</label>
+          <input type="number" id="stockCost" placeholder="Cost per item (ETB)" inputmode="decimal" min="0.01" max="999999999999.99" step="0.01" required />
+          <label class="sr-only" for="stockPrice">Selling price per item in ETB</label>
+          <input type="number" id="stockPrice" placeholder="Selling price (ETB)" inputmode="decimal" min="0.01" max="999999999999.99" step="0.01" required />
+          <button type="submit" id="stockSubmit">Add product</button>
+        </form>
+        <p class="error" id="stockError" role="status" aria-live="polite"></p>
+        <div id="stockList" aria-live="polite">
+          <p class="report-empty">Loading stock...</p>
+        </div>
+      </section>
+
+      <section id="salesPanel" class="stock-panel" role="tabpanel" aria-labelledby="salesTab" data-stock-panel hidden>
+        <div class="stock-heading">
+          <div>
+            <p class="eyebrow">PERFORMANCE</p>
+            <h2>Sales &amp; profit</h2>
+          </div>
+        </div>
+        <div class="sales-summary-grid" aria-live="polite">
+          <div class="sales-summary" data-sales-period="today"><span>Today</span><strong id="sales-today-total">—</strong><small>Profit <b id="sales-today-profit">—</b></small></div>
+          <div class="sales-summary" data-sales-period="week"><span>This week</span><strong id="sales-week-total">—</strong><small>Profit <b id="sales-week-profit">—</b></small></div>
+          <div class="sales-summary" data-sales-period="month"><span>This month</span><strong id="sales-month-total">—</strong><small>Profit <b id="sales-month-profit">—</b></small></div>
+          <div class="sales-summary" data-sales-period="year"><span>This year</span><strong id="sales-year-total">—</strong><small>Profit <b id="sales-year-profit">—</b></small></div>
+        </div>
+        <form id="sellForm" class="sell-form">
+          <label class="sr-only" for="sellProduct">Product to sell</label>
+          <select id="sellProduct" required>
+            <option value="">Loading products...</option>
+          </select>
+          <label class="sr-only" for="sellQuantity">Quantity sold</label>
+          <input type="number" id="sellQuantity" placeholder="Qty" min="1" max="1000000000" step="1" required />
+          <label class="sr-only" for="sellPrice">Sale price per item in ETB</label>
+          <input type="number" id="sellPrice" placeholder="Sale price (ETB)" inputmode="decimal" min="0.01" max="999999999999.99" step="0.01" required />
+          <button type="submit" id="sellSubmit">Record sale</button>
+        </form>
+        <p class="error" id="salesError" role="status" aria-live="polite"></p>
+        <form id="salesExportForm" class="sales-export-form">
+          <div class="export-dates">
+            <div><label for="salesExportFrom">From</label><input type="date" id="salesExportFrom" required /></div>
+            <div><label for="salesExportTo">To</label><input type="date" id="salesExportTo" required /></div>
+          </div>
+          <button type="submit" id="salesExportButton">Export sales</button>
+          <p class="export-status" id="salesExportStatus" role="status" aria-live="polite"></p>
+        </form>
+        <h3 class="sales-heading">Recent sales</h3>
+        <ul id="salesList" class="stock-sales-list" aria-live="polite">
+          <li class="empty-state">Loading sales...</li>
+        </ul>
+      </section>
+    </div>
   </div>
 
   <script src="app.js"></script>
